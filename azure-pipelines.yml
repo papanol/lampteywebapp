@@ -5,26 +5,32 @@ pool:
   vmImage: 'ubuntu-latest'
 
 stages:
+  # Build Stage
   - stage: Build
     displayName: Build and Push Docker Image
     jobs:
       - job: Build
         displayName: Docker Build and Push
         steps:
-          # Checkout the repository
+          # Checkout the repository from GitHub
           - task: Checkout@1
+            displayName: 'Checkout Repository'
+            inputs:
+              repository: 'github.com_papanol' # GitHub service connection to papanol account
+              fetchDepth: 0                   # Ensure the full history is fetched
 
           # Build and Push Docker Image to ACR
           - task: Docker@2
             displayName: 'Build and Push Docker Image to ACR'
             inputs:
-              containerRegistry: 'acr-connection'          # Docker Registry service connection
-              repository: 'papanol'                       # Repository name in your ACR
+              containerRegistry: 'arc-connection'           # Azure Container Registry (ACR) service connection
+              repository: 'lampteywebapp'                  # Repository name in your ACR
               command: 'buildAndPush'
-              Dockerfile: '**/Dockerfile'                 # Path to Dockerfile
+              Dockerfile: '**/Dockerfile'                  # Path to Dockerfile in the GitHub repo
               tags: |
-                $(Build.BuildId)                          # Use build ID as the tag
+                $(Build.BuildId)                           # Use build ID as the tag
 
+  # Deploy Stage
   - stage: Deploy
     displayName: Deploy to Azure App Service
     jobs:
@@ -39,7 +45,7 @@ stages:
                 - task: AzureWebAppContainer@1
                   displayName: 'Deploy Docker Image to Azure Web App'
                   inputs:
-                    azureSubscription: 'arm-connection'               # Azure Resource Manager service connection
-                    appName: 'lampteywebapp'                          # Name of the Azure App Service
+                    azureSubscription: 'arm-connection'                # Azure Resource Manager service connection
+                    appName: 'lampteywebapp'                           # Name of the Azure App Service
                     containerRegistry: 'lampteydccloudregistry.azurecr.io' # ACR Login Server
-                    imageName: 'papanol:$(Build.BuildId)'             # Repository and tag for the Docker image
+                    imageName: 'lampteywebapp:$(Build.BuildId)'        # Repository and tag for the Docker image
