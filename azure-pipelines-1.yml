@@ -2,13 +2,12 @@ trigger:
   - main
 
 pool:
-  name: lampteypool   # Specify the agent pool
+  name: lampteypool
   demands:
-    - Agent.Name -equals PAPA  # Ensure the pipeline uses the PAPA agent
+    - Agent.Name -equals PAPA
 
 variables:
-  # Docker registry service connection
-  dockerRegistryServiceConnection: 'a5ad5cb3-4c85-41f1-aeee-8bd7a9f66ba5' # Replace with your service connection ID
+  dockerRegistryServiceConnection: 'a5ad5cb3-4c85-41f1-aeee-8bd7a9f66ba5'
   imageRepository: 'lampteydccloudregistry'
   containerRegistry: 'lampteydccloudregistry.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
@@ -25,8 +24,8 @@ stages:
           - checkout: self
             displayName: 'Checkout Code'
 
-          # List files in the repository for debugging
-          - script: ls -R $(Build.SourcesDirectory)
+          # List files in the repository
+          - script: dir /s $(Build.SourcesDirectory)
             displayName: 'List Repository Contents'
 
           # Build and Push Docker Image
