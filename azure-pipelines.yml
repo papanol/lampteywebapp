@@ -2,14 +2,16 @@ trigger:
   - main
 
 pool:
-  name: lamptey  # Reference the agent pool with one agent
+  name: lamptey  # Ensure this is the name of the agent pool in Azure DevOps
+  demands:
+    - agent.name -equals lampteyagent1  # Specify the Linux agent name
 
 resources:
   repositories:
     - repository: lampteywebapp
       type: github
       name: papanol/lampteywebapp
-      endpoint: github.com_papanol
+      endpoint: github.com_papanol  # Ensure the service connection exists
 
 stages:
   # Build Stage
@@ -18,6 +20,10 @@ stages:
     jobs:
       - job: Build
         displayName: Docker Build and Push
+        pool:
+          name: lamptey
+          demands:
+            - agent.name -equals lampteyagent1
         steps:
           # Checkout the external GitHub repository
           - checkout: lampteywebapp
@@ -28,7 +34,7 @@ stages:
             displayName: 'Build and Push Docker Image to ACR'
             inputs:
               containerRegistry: 'acr-connection'
-              repository: 'lampteydccloudregistry'
+              repository: 'lampteyacr'  # Updated ACR repository name
               command: 'buildAndPush'
               Dockerfile: '**/Dockerfile'
               tags: |
@@ -37,11 +43,15 @@ stages:
   # Deploy Stage
   - stage: Deploy
     displayName: Deploy to Azure App Service
-    dependsOn: Build  # Ensure Deploy stage only runs after Build
+    dependsOn: Build
     jobs:
       - deployment: Deploy
         displayName: Deploy to Azure Web App
         environment: 'AzureWebApp'
+        pool:
+          name: lamptey
+          demands:
+            - agent.name -equals lampteyagent1
         strategy:
           runOnce:
             deploy:
@@ -52,5 +62,5 @@ stages:
                   inputs:
                     azureSubscription: 'arm-connection'
                     appName: 'lampteywebapp'
-                    containerRegistry: 'lampteydccloudregistry.azurecr.io'
-                    imageName: 'lampteydccloudregistry:$(Build.BuildId)'
+                    containerRegistry: 'lampteyacr.azurecr.io'  # Updated ACR login server
+                    imageName: 'lampteyacr:$(Build.BuildId)'  # Updated ACR name with tag
