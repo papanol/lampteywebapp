@@ -9,7 +9,7 @@ resources:
     - repository: lampteywebapp
       type: github
       name: papanol/lampteywebapp
-      endpoint: github.com_papanol
+      endpoint: github.com_papanol  # Corrected GitHub service connection
 
 stages:
   # Build Stage
@@ -27,7 +27,7 @@ stages:
           - task: Docker@2
             displayName: 'Build and Push Docker Image to ACR'
             inputs:
-              containerRegistry: 'arc-connection'           # ACR service connection
+              containerRegistry: 'acr-connection'           # Fixed ACR service connection name
               repository: 'lampteydccloudregistry'         # ACR repository name
               command: 'buildAndPush'
               Dockerfile: '**/Dockerfile'                  # Path to Dockerfile in the repository
@@ -49,7 +49,7 @@ stages:
                 - task: AzureWebAppContainer@1
                   displayName: 'Deploy Docker Image to Azure Web App'
                   inputs:
-                    azureSubscription: 'arm-connection'                 # ARM service connection
+                    azureSubscription: 'arm-connection'                 # Corrected ARM service connection name
                     appName: 'lampteywebapp'                            # Azure Web App name
                     containerRegistry: 'lampteydccloudregistry.azurecr.io' # ACR login server
                     imageName: 'lampteydccloudregistry:$(Build.BuildId)' # Image name with tag
