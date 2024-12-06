@@ -1,39 +1,35 @@
-# Docker
-# Build and push an image to Azure Container Registry
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
-- main
+  - main
 
-resources:
-- repo: self
+pool:
+  name: pipeline-pool  # Use the self-hosted agent pool
+  demands:
+    - agent.name -equals niipapa-VirtualBox  # Use the specific self-hosted agent
 
-variables:
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'bcaf6335-7028-4e54-ab1f-9eceefdcd331'
-  imageRepository: 'papanollampteywebapp'
-  containerRegistry: 'papadhruvacr.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
-  tag: '$(Build.BuildId)'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
-
-stages:
-- stage: Build
-  displayName: Build and push stage
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
+jobs:
+  - job: BuildAndDeploy
+    displayName: Build and Deploy
     steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
+      # Checkout the repository
+      - checkout: self
+        displayName: 'Checkout Source Code'
+
+      # Build and Push Docker Image to Azure Container Registry
+      - task: Docker@2
+        displayName: 'Build and Push Docker Image'
+        inputs:
+          containerRegistry: 'acr-service-connection'  # Azure service connection for ACR
+          repository: 'papadhruvacr/appweb'            # Repository name in your ACR
+          command: 'buildAndPush'
+          Dockerfile: '**/Dockerfile'
+          tags: |
+            $(Build.BuildId)
+
+      # Deploy Docker Image to Azure App Service
+      - task: AzureWebAppContainer@1
+        displayName: 'Deploy Docker Image to Azure Web App'
+        inputs:
+          azureSubscription: 'azure-arm-connection'  # Azure ARM service connection
+          appName: 'appweb'                          # Azure App Service name
+          containerRegistry: 'papadhruvacr.azurecr.io'  # ACR login server
+          imageName: 'papadhruvacr/appweb:$(Build.BuildId)'  # Docker image with tag
