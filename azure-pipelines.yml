@@ -2,16 +2,7 @@ trigger:
   - main
 
 pool:
-  name: lamptey  # Ensure this is the name of the agent pool in Azure DevOps
-  demands:
-    - agent.name -equals lampteyagent1  # Specify the Linux agent name
-
-resources:
-  repositories:
-    - repository: lampteywebapp
-      type: github
-      name: papanol/lampteywebapp
-      endpoint: github.com_papanol  # Ensure the service connection exists
+  name: pipeline-pool  # Use the self-hosted agent pool
 
 stages:
   # Build Stage
@@ -19,22 +10,20 @@ stages:
     displayName: Build and Push Docker Image
     jobs:
       - job: Build
-        displayName: Docker Build and Push
+        displayName: Build Docker Image and Push to ACR
         pool:
-          name: lamptey
-          demands:
-            - agent.name -equals lampteyagent1
+          name: pipeline-pool
         steps:
-          # Checkout the external GitHub repository
-          - checkout: lampteywebapp
-            displayName: 'Checkout GitHub Repository'
+          # Checkout the repository
+          - checkout: self
+            displayName: 'Checkout Source Code'
 
-          # Build and Push Docker Image to ACR
+          # Build and Push Docker Image to Azure Container Registry
           - task: Docker@2
-            displayName: 'Build and Push Docker Image to ACR'
+            displayName: 'Build and Push Docker Image'
             inputs:
-              containerRegistry: 'acr-connection'
-              repository: 'lampteyacr'  # Updated ACR repository name
+              containerRegistry: 'acr-service-connection'  # Azure service connection for ACR
+              repository: 'papadhruvacr/appweb'            # Repository name in your ACR
               command: 'buildAndPush'
               Dockerfile: '**/Dockerfile'
               tags: |
@@ -49,18 +38,16 @@ stages:
         displayName: Deploy to Azure Web App
         environment: 'AzureWebApp'
         pool:
-          name: lamptey
-          demands:
-            - agent.name -equals lampteyagent1
+          name: pipeline-pool
         strategy:
           runOnce:
             deploy:
               steps:
-                # Deploy the Docker image to Azure Web App
+                # Deploy Docker Image to Azure Web App
                 - task: AzureWebAppContainer@1
                   displayName: 'Deploy Docker Image to Azure Web App'
                   inputs:
-                    azureSubscription: 'arm-connection'
-                    appName: 'lampteywebapp'
-                    containerRegistry: 'lampteyacr.azurecr.io'  # Updated ACR login server
-                    imageName: 'lampteyacr:$(Build.BuildId)'  # Updated ACR name with tag
+                    azureSubscription: 'azure-arm-connection'  # Azure ARM service connection name
+                    appName: 'appweb'                          # Azure App Service name
+                    containerRegistry: 'papadhruvacr.azurecr.io'  # ACR login server
+                    imageName: 'papadhruvacr/appweb:$(Build.BuildId)'  # Docker image with tag
