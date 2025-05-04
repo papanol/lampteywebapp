@@ -1,0 +1,4 @@
+github_repo        = "https://github.com/papanol/app-ecs"  # Full HTTPS URL to your GitHub repository
+github_branch      = "main"                                # Or your working branch name
+github_oauth_token = "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"  # Your real GitHub PAT token here
+db_password        = "@Valeria69"       # Password for your RDS database
